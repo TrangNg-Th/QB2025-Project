@@ -59,9 +59,9 @@ Study on the effect of climate change on biodiveristy of macrozoobenthos in the 
       - Temporal range: 1980-2005 ![alt text](image-2.png)
 ---
 ## Features
-- **Easy to use**
-- **Customizable**
-- **Responsive**
+- **Test 1**
+- **Test 2**
+- **Test 3**
 
 ---
 
