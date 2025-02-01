@@ -12,8 +12,8 @@ Study on the effect of climate change on biodiveristy of macrozoobenthos in the 
   - [Evironemental variables](#evironemental-variables)
     - [Data sources](#data-sources)
   - [Data preparation](#data-preparation)
-  - [Features](#features)
-  - [Code Example](#code-example)
+  - [Codes](#codes)
+  - [Updates](#updates)
 
 
 ### Data variables
@@ -54,19 +54,13 @@ Study on the effect of climate change on biodiveristy of macrozoobenthos in the 
 ## Data preparation
 1. **Data Collection**: Collect data from NCEI and OBIS.
    - Download data from OBIS using the following query ![alt text](image.png)
-   - Download data from NCEI using the query [here](https://www.ncei.noaa.gov/access/world-ocean-database-select/bin/builder.pl)
-      - Geographic range: Baltic Sea ![alt text](image-1.png)
-      - Temporal range: 1980-2005 ![alt text](image-2.png)
----
-## Features
-- **Test 1**
-- **Test 2**
-- **Test 3**
-
+   - Download data from ICES using the query [here](https://www.ices.dk/data/dataset-collections/Pages/default.aspx)
+      - Geographic range: Baltic Sea ![alt text](image-4.png)
+      - Temporal range: 1980-2005 
+## Codes
+- `0.dataprep.ipynb` : Data preparation and cleaning for macrozoobenthos and environmental data.
+- `1.analysis.ipynb` : Data analysis and visualization.
 ---
 
-## Code Example
-```python
-def example():
-    print("This is an example.")
-```
+## Updates
+- **2025-01-30**: Looked at the dataset `sps_macrozoobenthos_timeseries.csv`, and found that not all sites are sampled every year. There is a big difference between sites. -> Suggestion : Take the 10 most sampled sites and look at the data.
