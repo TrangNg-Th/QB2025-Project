@@ -10,6 +10,7 @@ Study on the effect of climate change on biodiveristy of macrozoobenthos in the 
   - [Table of Contents](#table-of-contents)
     - [Data variables](#data-variables)
   - [Evironemental variables](#evironemental-variables)
+  - [Environmental Variables](#environmental-variables)
     - [Data sources](#data-sources)
   - [Data preparation](#data-preparation)
   - [Codes](#codes)
@@ -19,27 +20,28 @@ Study on the effect of climate change on biodiveristy of macrozoobenthos in the 
 ### Data variables
 ## Evironemental variables
 | **Variable**                      | **Unit**       | **Why Important**                                                                                           |
-|------------------------------------|----------------|-------------------------------------------------------------------------------------------------------------|
-| **Temperature**                   | °C             | Affects metabolic rates, growth, reproduction, and distribution of species.                                 |
-| **Salinity**                      | unitless       | Determines species composition due to the Baltic Sea's unique salinity gradient.                            |
-| **Oxygen**                        | µmol/kg        | Crucial for survival; low levels (hypoxia) lead to dead zones.                                              |
-| **Phosphate**                     | µmol/kg        | Reflects nutrient enrichment and eutrophication, impacting food supply and oxygen levels.                   |
-| **Silicate**                      | µmol/kg        | Related to nutrient dynamics, especially diatom abundance, which impacts food availability.                 |
-| **Nitrate and Nitrate+Nitrite**   | µmol/kg        | Indicators of nutrient load, eutrophication, and food availability for benthic organisms.                   |
-| **pH**                            | unitless       | Affects carbonate chemistry; low pH harms organisms with calcium carbonate shells.                          |
-| **Chlorophyll**                   | µg/l           | Proxy for phytoplankton biomass, a key food source for benthic species.                                     |
-| **Pressure**                      | dbar           | Reflects depth, influencing oxygen levels, light penetration, and habitat conditions.                       |
-| **Dissolved Inorganic Carbon**    | mM             | Indicates carbon chemistry and potential effects of acidification.                                          |
-| **Transmissivity**                | 1/m            | Measures water clarity; turbidity impacts benthic photosynthesis and sedimentation.                         |
-| **CO₂ warming**                   | °C             | Long-term warming stresses species and shifts distributions.                                                |
-|Features to consider:|
-| **Alkalinity**                    | meq/l          | Balances pH and carbonate chemistry, essential for calcifying organisms.                                    |
-| **Air Temperature**               | °C             | Indirectly influences surface water conditions, especially in shallow regions.                              |
-| **Air Pressure**                  | mbar           | Affects surface water conditions indirectly.                                                                |
-| **Helium, Argon, Neon**           | nmol/kg        | Indicate gas saturation and reveal hypoxia or upwelling zones.                                              |
-| **Chlorofluorocarbon (CFC 11/12)**| pmol/kg        | Act as tracers for water mass movement and age, reflecting habitat stability.                                |
+## Environmental Variables
 
-
+| **Variable**                                  | **Unit**       | **Why Important**                                                                                           |
+|-----------------------------------------------|---------------|-------------------------------------------------------------------------------------------------------------|
+| **Bot. Depth**                                | m             | Represents the bottom depth of the water, which influences habitat conditions and species distribution.   |
+| **Secchi Depth**                              | m             | Measures water clarity and light penetration, affecting photosynthesis and primary production.              |
+| **Depth (ADEPZZ01_ULAA)**                     | m             | Indicates the sampled water depth,|
+| **Temperature (TEMPPR01_UPAA)**               | °C            | Affects metabolic rates, chemical reactions, and species distribution in aquatic ecosystems.               |
+| **Salinity (PSALPR01_UUUU)**                  | unitless      | Determines species composition, affects water density, and influences ocean circulation.                   |
+| **Oxygen (DOXYZZXX_UMLL)**                    | ml/l          | Essential for marine life                                 |
+| **Phosphate (PHOSZZXX_UPOX)**                 | µmol/l        | Key nutrient for phytoplankton growth                      |
+| **Total Phosphorus (TPHSZZXX_UPOX)**          | µmol/l        | Includes all phosphorus forms, indicating overall nutrient availability      |
+| **Silicate (SLCAZZXX_UPOX)**                  | µmol/l        | Necessary for diatom growth, influencing primary production and food web dynamics.                         |
+| **Nitrate + Nitrite (NTRZZZXX_UPOX)**         | µmol/l        | Indicator of nutrient load and potential eutrophication, impacting oxygen levels.                          |
+| **Nitrate (NTRAZZXX_UPOX)**                   | µmol/l        | Major nitrogen source for phytoplankton growth                             |
+| **Nitrite (NTRIZZXX_UPOX)**                   | µmol/l        | Intermediate in nitrogen cycling                   |
+| **Ammonium (AMONZZXX_UPOX)**                  | µmol/l        | Readily available nitrogen source for phytoplankton           |
+| **Total Nitrogen (NTOTZZXX_UPOX)**            | µmol/l        | Sum of all nitrogen forms, reflecting overall nutrient availability and ecosystem productivity.            |
+| **Hydrogen Sulfide (H2SXZZXX_UPOX)**          | µmol/l        | Indicates anoxic conditions; toxic to marine life and influences redox chemistry.                          |
+| **pH (PHXXZZXX_UUPH)**                        | pH units      | Affects carbonate chemistry, species survival, and ocean acidification.                                    |
+| **Total Alkalinity (ALKYZZXX_MEQL)**          | mEq/l         | Buffers pH changes and is essential for carbonate system stability.                                        |
+| **Chlorophyll a (CPHLZZXX_UGPL)**             | µg/l          | Proxy for phytoplankton biomass and primary productivity, indicating ecosystem health.                     |
 
 
 
@@ -64,3 +66,9 @@ Study on the effect of climate change on biodiveristy of macrozoobenthos in the 
 
 ## Updates
 - **2025-01-30**: Looked at the dataset `sps_macrozoobenthos_timeseries.csv`, and found that not all sites are sampled every year. There is a big difference between sites. -> Suggestion : Take the 10 most sampled sites and look at the data.
+
+- **2025-02-01**:
+  - Create notebook `0.dataprep.ipynb` for data preparation and cleaning.
+  - Create SyS matrices for macrozoobenthos data. After filtering, only 3 sites have data for almost all years and for all environmental variables.
+  - Create environmental data matrices for the same 3 sites over years
+  
