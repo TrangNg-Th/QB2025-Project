@@ -8,18 +8,11 @@ Study on the effect of climate change on biodiveristy of macrozoobenthos in the 
 ## Table of Contents
 - [QB2025-Project](#qb2025-project)
   - [Table of Contents](#table-of-contents)
-    - [Data variables](#data-variables)
-  - [Evironemental variables](#evironemental-variables)
   - [Environmental Variables](#environmental-variables)
     - [Data sources](#data-sources)
   - [Data preparation](#data-preparation)
   - [Codes](#codes)
   - [Updates](#updates)
-
-
-### Data variables
-## Evironemental variables
-| **Variable**                      | **Unit**       | **Why Important**                                                                                           |
 ## Environmental Variables
 
 | **Variable**                                  | **Unit**       | **Why Important**                                                                                           |
@@ -71,4 +64,9 @@ Study on the effect of climate change on biodiveristy of macrozoobenthos in the 
   - Create notebook `0.dataprep.ipynb` for data preparation and cleaning.
   - Create SyS matrices for macrozoobenthos data. After filtering, only 3 sites have data for almost all years and for all environmental variables.
   - Create environmental data matrices for the same 3 sites over years
+- **2025-02-07**:
+  - Make heatmap and clusters for the 3 sites and environmental variables.
+  - Update correlation plots for environmental variables.
+ 
+- **2025-02-08**:
   
