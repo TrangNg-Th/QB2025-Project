@@ -1,0 +1,285 @@
+---
+title: 'Temporal Analysis of Zoobenthos Data'
+author: "Trang Nguyen; El Park"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: pdf_document
+geometry: margin=2.54cm
+---
+
+
+
+# Biodiversity Analysis of Zoobenthos in the Baltic Sea
+
+## 1. **Introduction**
+
+In this analysis, we explore the dynamics of zoobenthos species richness and their relationship with environmental factors in the Baltic Sea over a time span from 1980 to 2005. The analysis incorporates various methods, including species richness calculation, time series analysis, beta diversity, rank shift analysis, and community stability assessment
+
+1. Questions for Analysis
+In order to guide this project and achieve a deeper understanding of zoobenthos biodiversity in the Baltic Sea, the following questions were formulated:
+
+What is the temporal pattern of zoobenthos species richness across different sites?
+
+How does species richness change over time at different sites in the Baltic Sea?
+Are there any significant trends, peaks, or declines in species richness at specific times or sites?
+How does site location affect species richness?
+
+Is there a difference in species richness between different sites (S0, S2, S3) over time?
+Are some sites more stable in terms of species richness than others?
+What is the turnover rate of species at each site?
+
+How much does species composition change over time?
+Are there years where new species appear or existing species disappear significantly?
+What is the Mean Rank Shift (MRS) of species?
+
+How much do species rankings change from one year to the next?
+Does the rank order of species remain stable, or are there significant shifts in the species composition over time?
+How stable are the zoobenthos communities over time?
+
+What is the variability in species richness across years at each site, and how does this affect community stability?
+Can we identify periods of community instability or resilience?
+
+## 2. **Data Preparation**
+
+### 2.1 **Setting Up the Environment**
+
+```{r}
+# Set up working directory (use your own directory path)
+rm(list=ls()) 
+getwd() 
+
+# Load the required packages
+package.list = c('vegan', 'tidyr', 'dplyr', 'codyn', 'ggplot2', 'nlme', 'forecast', 'emmeans', 'tseries', 'RColorBrewer')
+for (package in package.list) {
+  if (!require(package, character.only = TRUE, quietly = TRUE)) {
+    install.packages(package, repos='http://cran.us.r-project.org')
+    library(package, character.only = TRUE)
+  }
+}
+```
+
+
+
+### 2.2 **Loading the Dataset**
+
+We load the dataset containing information on zoobenthos species abundance and environmental factors.
+
+```{r}
+# Load the dataset
+data = read.csv("data/data_temporal.csv")  # Update path to your dataset
+```
+
+
+### 2.3 **Converting to a Time-by-Species Matrix**
+
+To analyze species richness across years and sites, we create a time-by-species matrix.
+
+```{r}
+
+# Convert to time-by-species matrix: Group by year and site_id, count species
+time.by.species = group_by(data, year, site_id) %>% 
+  count(species) %>% 
+  spread(key = species, value = n, fill = 0)
+
+# Calculate observed richness per site and year
+richness = rowSums(time.by.species[,-c(1:2)])  # Remove year and site_id columns
+richness_data = data.frame(time.by.species, richness)
+
+# Convert columns to appropriate formats
+richness_data$year = as.factor(richness_data$year)
+richness_data$site_id = as.factor(richness_data$site_id)
+richness_data$richness = as.numeric(richness_data$richness)
+
+head(richness_data)
+```
+
+## 3. **Visualizing Temporal Patterns**
+
+### 3.1 **Time Series Analysis of Richness**
+
+We convert the data into a time series format for each site and plot the species richness over time.
+
+```{r}
+## ============ Visualizing temporal patterns ============
+
+# Convert the data to a time series format for each site
+S0.ts = ts(richness_data[richness_data$site_id == "S0", ]$richness, start = 1984, end = 2004, frequency = 1)
+S2.ts = ts(richness_data[richness_data$site_id == "S2", ]$richness, start = 1984, end = 2004, frequency = 1)
+S3.ts = ts(richness_data[richness_data$site_id == "S3", ]$richness, start = 1984, end = 2004, frequency = 1)
+
+# Plot time series
+# Save the plots as separate files
+pdf("plots/S0_Richness_Time_Series.pdf")
+plot.ts(S0.ts, main = "Richness over Time at Site 0", ylab = "Richness", xlab = "Year")
+plot.ts(S2.ts, main = "Richness over Time at Site 2", ylab = "Richness", xlab = "Year")
+plot.ts(S3.ts, main = "Richness over Time at Site 3", ylab = "Richness", xlab = "Year")
+dev.off()
+```
+
+
+
+### 3.2 **Result**:
+
+The time series plots for sites S0, S2, and S3 show the richness at each site. There is an upward trend in all the sites, but all of the time series show high volatility.
+
+## 4. **RM-ANOVA (Repeated Measures ANOVA)**
+
+### 4.1 **Model Fitting**
+
+We fit a **linear mixed-effects model** (LME) to analyze the effect of `year` and `site_id` on species richness, with `site_id` as a random effect.
+
+```{r}
+## ================ RM-ANOVA ================
+# Fit a simpler model without the interaction term
+rich.rm_simple = lme(richness ~ year + site_id, 
+                      random = ~ 1 | site_id,  
+                      data = richness_data)
+
+# Check summary output of the model
+summary(rich.rm_simple)
+```
+> **Random Effects**
+> The random effects here shows how much variability there is across the levels of site_id. 
+> In this case, each site has its own baseline richness level.
+> The random intercept for site_id has a standard deviation of 3.87, this means that there is variability in species richness across the different sites.
+> The residual standard deviation is 6.66, this shows the variability in richness after accounting for the fixed effects (year and site_id).
+>
+> **Fixed Effects**
+> The fixed effects shows how the predictors (in this case, year and site_id) are associated with the outcome variable richness. It provides the estimated effects (coefficients), standard errors, t-values, and p-values for each of these predictors.
+> 
+> (Intercept): 10.67 (p-value = 0.0633)
+> The intercept represents the expected species richness in the baseline year (1984) and at site S1. The p-value is just above 0.05, suggesting a marginally significant difference from 0, but not quite statistically significant.
+> Year Effects: Coefficients for each year are provided. These represent the difference in species richness relative to the baseline year (1984).
+> For example, year1985 has a coefficient of 3.00, but the p-value is 0.5840, meaning there is no significant difference in species richness between 1985 and 1984.
+> year1996 has a coefficient of 19.33 (p-value = 0.0010), which is statistically significant. This suggests that the species richness in 1996 is significantly higher compared to 1984.
+> year2001 also has a significant positive effect with a coefficient of 19.67 and p-value = 0.0008, indicating a significant increase in richness in this year.
+> Other years (e.g., 1986, 1987, 1990) do not show significant differences from 1984, with p-values greater than 0.05.
+
+> Site Effects: Coefficients for the sites (site_idS2, site_idS3) show the difference in species richness between these sites and the reference site (S1).
+> site_id S2: Coefficient is 6.90 (p-value = NaN), indicating some positive difference in richness, though the p-value is not provided, suggesting no statistical test for this site’s effect.
+> site_id S3: Coefficient is -7.90 (p-value = NaN), indicating a negative difference in richness for site S3, but again, the p-value is not available.
+
+> **Correlation of Fixed Effects**
+> The correlation matrix of the fixed effects shows how correlated the predictors are with each other.
+> The correlations here are all moderate (e.g., 0.500 for year-to-year comparisons), meaning there is some relationship between the years, but it is not overly high. This indicates that multicollinearity is not a major issue.
+
+
+```{r}
+# Plots
+# Q-Q plot for residuals
+qqnorm(resid(rich.rm_simple), main = "Q-Q Plot")
+qqline(resid(rich.rm_simple), col = "red")
+
+# Histogram of residuals
+hist(resid(rich.rm_simple), main = "Histogram of Residuals", xlab = "Residuals", breaks = 20)
+
+# Residuals vs Leverage plot
+plot(rich.rm_simple, which = 5, main = "Residuals vs Leverage")
+
+# Scale-Location plot
+plot(rich.rm_simple, which = 3, main = "Scale-Location Plot")
+
+```
+### 4.2 **ANOVA and Marginal Means**
+
+We then perform the **ANOVA** to assess the statistical significance of the fixed effects and calculate **LSMeans** to estimate marginal means.
+
+```r
+# Perform the ANOVA
+anova_results = anova(rich.rm_simple)
+pander(anova_results)
+
+# Calculate marginal means (LSMeans) for year and site_id
+library(lsmeans)
+lsmeans_results = lsmeans(rich.rm_simple, ~ year | site_id)
+summary(lsmeans_results)
+```
+> **ANOVA Results**
+> Intercept and year are both significant, meaning the model shows meaningful variation in species richness over time.
+> site_id has a significant F-value, but the p-value could not be calculated due to a problem with the denominator degrees of freedom. 
+
+
+
+## 5. **Beta Diversity Analysis**
+
+### 5.1 **Turnover Metrics**
+
+We calculate **turnover metrics** (total turnover, appearance, disappearance) to examine how species composition changes across sites and years.
+
+```{r}
+
+# Calculate turnover for the three sites (S0, S2, and S3)
+species.abunds = group_by(data, year, site_id) %>% count(species)
+
+# Calculate turnover metrics
+total_turnover = turnover(df = species.abunds, 
+                                   time.var = "year", 
+                                   species.var = "species", 
+                                   abundance.var = "n",
+                                   replicate.var = "site_id",
+                                   metric = "total")
+
+appearance = turnover(df = species.abunds, 
+                               time.var = "year", 
+                               species.var = "species", 
+                               abundance.var = "n",
+                               replicate.var = "site_id",
+                               metric = "appearance")
+
+disappearance = turnover(df = species.abunds, 
+                                  time.var = "year", 
+                                  species.var = "species", 
+                                  abundance.var = "n",
+                                  replicate.var = "site_id",
+                                  metric = "disappearance")
+
+# Combine turnover metrics
+turnover = full_join(total_turnover, disappearance) %>%
+  full_join(appearance)
+
+# Convert to long format
+turnover = gather(turnover, key = metric, value = turnover, 
+                          total, appearance, disappearance)
+
+# Visualize turnover
+pdf("plots/Turnover_Metrics.pdf")
+ggplot(turnover, aes(x = year, y = turnover, color = metric)) +
+  geom_line(size = 1) + 
+  facet_wrap(~ site_id, ncol = 1) + 
+  xlim(1984, 2004) + 
+  xlab("Year") + 
+  ylab("Turnover") + 
+  scale_color_grey()
+dev.off()
+
+```
+
+### 5.2 **Result**:
+
+The turnover analysis helps us visualize changes in species composition over time. The high points in turnover indicates significant changes in community structure, while low turnover suggests more stability in species composition.
+
+
+## 7. **Community Stability (Coefficient of Variation)**
+
+### 7.1 **Calculating Community Stability**
+
+We calculate the **Coefficient of Variation (CV)** to assess community stability across time.
+
+```{r}
+# Community Stability (Coefficient of Variation)
+portal.stab = community_stability(df = species.abunds, 
+                                    time.var = "year", 
+                                    abundance.var = "n", 
+                                    replicate.var = "site_id")
+portal.stab
+```
+
+### 7.2 **Result**:
+
+> A higher CV means greater variability or fluctuations in species richness across time.
+> This means that at Site S0, species richness fluctuates more over the years, and the community is less stable compared to the other sites
+> The CV for Site S2 is lower than for Site S0, indicating that the species richness at this site fluctuates less over time and the community is more stable compared to Site S0.
+> Site S3 has the lowest CV, indicating the most stable species richness over time among the three sites.
+
+
+---
+

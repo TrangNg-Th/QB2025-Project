@@ -8,11 +8,22 @@ Study on the effect of climate change on biodiveristy of macrozoobenthos in the 
 ## Table of Contents
 - [QB2025-Project](#qb2025-project)
   - [Table of Contents](#table-of-contents)
+  - [Motivation](#motivation)
   - [Environmental Variables](#environmental-variables)
     - [Data sources](#data-sources)
   - [Data preparation](#data-preparation)
   - [Codes](#codes)
-  - [Updates](#updates)
+
+## Motivation
+The Baltic Sea is a unique and ecologically important marine ecosystem that supports a diverse array of species, including macrozoobenthos. These benthic organisms play a crucial role in the Baltic Sea food web and ecosystem functioning, contributing to nutrient cycling, sediment stability, and providing food for higher trophic levels. However, the Baltic Sea is facing numerous environmental challenges, including climate change, pollution, and habitat degradation, which are impacting the biodiversity and abundance of macrozoobenthos species. Understanding the temporal and spatial patterns of species richness, community composition, and environmental drivers of macrozoobenthos in the Baltic Sea is essential for monitoring ecosystem health, predicting future changes, and informing conservation and management strategies. This project aims to analyze time series data on macrozoobenthos and environmental variables in the Baltic Sea to investigate the effects of climate change on biodiversity and community dynamics. 
+
+**Why study species richness over time?**
+Species richness reflects biodiversity, and studying its temporal pattern allows us to understand the stability or fluctuations in biodiversity.
+
+
+**Why study changes across sites?**
+The Baltic Sea is known for its varying environmental conditions. Species richness may respond differently at each site depending on the environmental conditions. Understanding these temporal changes in species richness across multiple sites provides insights into local ecological health and resilience. Identifying trends, peaks, or declines can help assess how disturbances, whether natural or anthropogenic, are affecting biodiversity at each site.
+
 ## Environmental Variables
 
 | **Variable**                                  | **Unit**       | **Why Important**                                                                                           |
@@ -46,27 +57,21 @@ Study on the effect of climate change on biodiveristy of macrozoobenthos in the 
 
 ---
 
+
+
 ## Data preparation
 1. **Data Collection**: Collect data from NCEI and OBIS.
    - Download data from OBIS using the following query ![alt text](image.png)
    - Download data from ICES using the query [here](https://www.ices.dk/data/dataset-collections/Pages/default.aspx)
       - Geographic range: Baltic Sea ![alt text](image-4.png)
       - Temporal range: 1980-2005 
+  
 ## Codes
 - `0.dataprep.ipynb` : Data preparation and cleaning for macrozoobenthos and environmental data.
-- `1.analysis.ipynb` : Data analysis and visualization.
+- `1.analysis.ipynb` : Data analysis and visualization for macrozoobenthos and environmental data.
+- `2.Spatial_analysis.Rmd` : Spatial analysis of macrozoobenthos data.
+- `3.Temporal_analysis.Rmd` : Time series analysis of macrozoobenthos data.
 ---
 
-## Updates
-- **2025-01-30**: Looked at the dataset `sps_macrozoobenthos_timeseries.csv`, and found that not all sites are sampled every year. There is a big difference between sites. -> Suggestion : Take the 10 most sampled sites and look at the data.
 
-- **2025-02-01**:
-  - Create notebook `0.dataprep.ipynb` for data preparation and cleaning.
-  - Create SyS matrices for macrozoobenthos data. After filtering, only 3 sites have data for almost all years and for all environmental variables.
-  - Create environmental data matrices for the same 3 sites over years
-- **2025-02-07**:
-  - Make heatmap and clusters for the 3 sites and environmental variables.
-  - Update correlation plots for environmental variables.
- 
-- **2025-02-08**:
   

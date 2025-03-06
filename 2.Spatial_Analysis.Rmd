@@ -1,0 +1,478 @@
+---
+title: 'Spatial Analysis of Zoobenthos Data'
+author: "Trang Nguyen; El Park"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: pdf_document
+geometry: margin=2.54cm
+---
+
+# Beta Diversity analysis
+We begin by loading the zoobenthos data and calculating the Bray-Curtis distance to measure the dissimilarity between sites.
+```{r  fig.align = 'center'}
+# Load packages
+library(vegan)
+package.list = c("ade4", "vegan", "viridis", "gplots", "BiodiversityR", "indicspecies")
+for (package in package.list) {
+  if (!require(package, character.only = TRUE, quietly = TRUE)) {
+    install.packages(package, dependencies = TRUE)
+    library(package, character.only = TRUE)
+  }
+}
+# Load SbS dataset
+data = read.csv("data/sbys_s013.csv", row.names= 1)
+# data
+# Calculate Bray-Curtis distance
+data.db = vegdist(data, method = "bray")
+
+site_labels = rownames(data)
+
+################################################3
+
+## SAve the plot as a PNG file
+png("plots/heatmap_s013.png", width = 1000, height = 1000)
+# Heatmap of dissimilarities 
+levelplot(as.matrix(data.db), 
+  col.regions = viridis, 
+  aspect="iso",
+  xlab = "Sites", ylab = "Sites", 
+  scales = list(cex=1,
+  x=list(labels=site_labels, rot=90), 
+  y=list(labels=site_labels)),
+  main = "Bray-Curtis Distance")
+
+#  Close the png device
+dev.off()
+
+#############################################################3
+# Perform cluster analysis
+data.ward = hclust(data.db, method = "ward.D2")
+cut_avg = cutree(data.ward, k = 3)
+
+png("plots/dendrogram_s013.png", width = 1000, height = 1000)
+# Plot cluster
+par(mar=c(1,5,2,2) + 0.1)
+plot(data.ward, main = "Ward's Clustering of SbS data", 
+  ylab = "squared Bray_Curtis distance")
+
+dev.off()
+######################################################
+# PCOA analysis for all sites
+data.pcoa = cmdscale(data.db, eig = TRUE, k = 3) 
+data.pcoa
+
+# Explained variance for first 3 axes
+explained_variance = round(sum(data.pcoa$eig[1:3]/sum(data.pcoa$eig)) * 100, 2)
+print("Explained variance of the 3 first axes:")
+print(explained_variance)
+
+png("plots/pcoa_s013.png", width = 1000, height = 1000)
+# Define Plot Parameters
+par(mar=c(1,5,2,2) + 0.1)
+
+# Initiate Plot
+plot(data.pcoa$points[ ,1], 
+  data.pcoa$points[ ,2], 
+     xlab = "PCoA 1",
+     ylab = "PCoA 2",
+     pch = 16, cex = 2,  type = "n", cex.lab = 1.5, 
+     cex.axis = 0.5, axes = FALSE)
+
+# # Add Axes
+axis(side = 1, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+axis(side = 2, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+abline(h = 0, v = 0, lty = 3)
+box(lwd = 2)
+
+# # Add Points & Labels
+points(data.pcoa$points[ ,1], 
+  data.pcoa$points[ ,2],
+  pch = 19, cex = 3, bg = "gray", col = "gray")
+text(data.pcoa$points[ ,1], data.pcoa$points[ ,2], 
+     labels = row.names(data.pcoa$points))
+  
+# Add species on top
+dataREL <- data
+  for(i in 1:nrow(data)){
+    dataREL[i, ] = data[i, ] / sum(data[i, ])
+    } 
+
+# Now, we use this information to calculate and add species scores
+data.pcoa <- add.spec.scores(
+  data.pcoa,
+  dataREL,
+  method = "pcoa.scores")
+
+text(
+  data.pcoa$cproj[ ,1], 
+  data.pcoa$cproj[ ,2], 
+  labels = row.names(data.pcoa$cproj), col = "red",
+  cex=1)
+
+dev.off()
+
+```
+
+
+> ***Cluster Analysis***
+> 
+> The heatmap shows distinct blocks of similarity between sites sampled in different years. Sites that are sampled over multiple years form blocks, which reflects their relatively stable zoobenthos community composition. 
+>
+
+
+
+> I think species nearer to the center are more present in most sites. While species far from the origin are more specialized or strongly associated with particular site conditions.
+> There are several patterns : 
+> Macoma balthica is strongly associated with site 1. This suggest that this species may adapt well in this site' specific condition. 
+> 
+> Diastylis rathkei is more abundant in these site 3. 
+>
+>Arctica islandica and Hetermastus filiformis are more abundant in site 0.
+
+
+
+> After our previous analysis of the zoobenthos data, we discovered that over the past 20 years there were only three distinct sites where we had environmental data over time (at least 2+ years). 
+> To work around this, we treated each site's data for each year as a separate sample.
+> When we examined the heatmap of zoobenthos abundance, we saw that the samples clustered into three main groups, which makes sense given that there are three sites.
+> However, we also noticed that sites 0 and 2 tend to be similar to each other, while site 1 maintains a more consistent zoobenthos composition over the years.
+> Furthermore, Ward's Clustering showed quite an interesting pattern: sites 0 and 3 are sometimes more similar to each other than to themselves in certain years
+
+> Now, we will now use PERMANOVA to determine if the zoobenthos composition differs significantly between sites and across years.
+```{r}
+
+library(vegan)
+library(indicspecies)
+groups = cut_avg
+data$groups = cut_avg
+# Run PERMANOVA
+adonis2(data ~ groups, method="bray", permutations=999)
+
+## IndVal matrix
+indval = multipatt(data, cluster=groups, func = "IndVal.g", control = how(nperm=100))
+summary(indval)
+
+# Phi coefficient analysis
+data.rel = decostand(data, method='total')
+phi = multipatt(data.rel, cluster=groups, func="r.g", control=how(nperm=100))    
+summary(phi)
+
+
+```
+
+
+> **Comments about PERMANOVA, IndVal and phi coefficient analyses**:
+> Here we see that the PERMANOVA test supports that there are significant differences in zoobenthos composition between the 3 groups that differentiate the sites and some sites in specific years. 
+> For IndVal analysis, we saw that there are 34 species that are significantly associated with the groups. For example, species such as Pygospio elegans, Mytilus edulis, and Macoma balthica are strongly associated with GR1. There are 16 species that are significantly linked to GR2, and 3 species show an association with the combination of groups GR2 and GR3. This is interesting as we saw that sites 0 and 2 are sometimes more similar to each other than to themselves in certain years.
+> The phi coefficient analysis showed that the species Pygospio elegans, Mytilus edulis, and Macoma balthica are strongly associated with GR1, which is consistent with the IndVal analysis. Here we see a similar grouping as IndVal.
+
+
+```{r}
+
+
+# data.env = read.csv(paste0(getwd(),"/Week4-Beta/data/env_data.csv"), row.names=1)
+data.env = read.csv("data/env_data.csv", header = TRUE)
+row.names(data.env) = data.env$site_year
+# Delete the site_year column
+data.env = data.env[,-1]
+
+# Retain the overlapping row names between the two distance matrices
+row_data.env = row.names(data.env)
+row_data = row.names(data)
+
+# Calculate the distance matrix for the environmental data
+# # Distance matrices of the data data
+data = data[row_data.env,]
+
+data.dist = vegdist(data, method="bray")
+data.env.dist = vegdist(scale(data.env), method="euclid")
+
+
+# row.names(data.env.dist)
+# # Mantel test
+mantel(data.dist, data.env.dist, method="pearson", permutations = 1000)
+```
+
+> **Comments about Mantel test**:
+In the Mantel test, we compare the dissimilarities in zoobenthos community composition with the differences in environmental conditions (using Euclidean distances on scaled data). First, we see that the statistic r is  0.3288, which is a moderate positive correlation. This means that sites that are more different in their environmental conditions tend to also be more different in their zoobenthos communities. Here, the p-value is 0.001, which is very small. This indicates that the correlation is statistically significant. 
+
+
+```{r}
+
+
+# Bray Curtis distance for data
+data.db = vegdist(data[rownames(data.env), ], method="bray")
+
+# Creat env matrix
+env.vars = as.matrix(data.env)
+
+
+
+# dbRDA
+png("plots/dbrda_plot_all.png", width = 4000, height = 3000, res = 500)
+data.dbrda.modfull = dbrda(data.db ~ ., as.data.frame(env.vars))
+ordiplot(data.dbrda.modfull)
+dev.off()
+
+# Check the pairwise correlation
+psych::corr.test(env.vars) 
+
+# ===============================================
+# Try model with constant explained variables
+data.dbrda.mod0 = dbrda(data.db  ~ 1, as.data.frame(env.vars))
+ordiplot(data.dbrda.mod0) # no vector as we don't use any variable in env.chem
+
+# Next, we will test all combination from 0 explanatory variable to full
+# This functions returns the one that has lowest AIC
+data.dbrda = ordiR2step(data.dbrda.mod0, data.dbrda.modfull, perm.max=200)
+ 
+# Summary of selected model
+data.dbrda$call   # data.db ~ ph + bot_depth + nitrate + min_depth
+data.dbrda$anova
+png("plots/dbrda_plot_best.png", width = 6000, height = 6000, res = 500)
+ordiplot(data.dbrda) 
+text(data.dbrda, display = "sites", cex = 0.4, pos = 3)
+dev.off()
+```
+
+## Driver environmental variables of zoobenthos community composition
+> **Comments about the constrained ordination**:
+> To keep this short, we see that 5 environmental variables temperature, silicate, salinity, min_depth, bot_depth are significant predictors of zoobenthos community composition. Together, they explain about 30% of the variation. 
+> The stepwise model selection confirms that each of these variables contributes significantly, and the ordination plot provides a visual representation of these environmental gradients and their effect on community structure.
+> We also note that these variables are not highly correlated with each other, which is good for the model.
+
+```{r}
+
+
+# Create a matrix model for the envr data
+env.mod = model.matrix( ~ salinity + temperature + silicate + bot_depth + min_depth + nitrate, as.data.frame(env.vars))[,-1]
+
+
+
+#cCreate spatial model
+
+# first, weight each site by its relative abundance
+rs = rowSums(data) / sum(data)
+rs = as.data.frame(rs)
+rs
+
+# Load spatial data
+# data.coords = read.csv(paste0(getwd(),"/Week4-Beta/data/site_coords.csv"), header = TRUE, row.names=1)
+data.coords = read.csv("data/site_coords.csv", header = TRUE, row.names=1)
+data.coords = data.coords[rownames(rs),]
+rs = rs[rownames(data.coords),]
+
+
+data.pcnmw = pcnm(dist(data.coords), w=rs, dist.re=T) # Perform PCNM on the coordinates
+data.pcnmw$values > 0 # Extract only eigenvectors associated with positive eigenvalues 
+
+# Perform model selection of spatial data
+data.space = as.data.frame(scores(data.pcnmw))
+data.pcnmw.mod0 = dbrda(data.db ~ 1, data.space) # no var
+data.pcnmw.mod1 = dbrda(data.db ~ ., data.space) # all var
+# Stepwise model selection
+step.pcnm = ordiR2step(data.pcnmw.mod0, data.pcnmw.mod1, perm.max=200)
+# png("Outputs/step_pcnm.png", width = 4000, height = 3000, res = 500)
+plot(step.pcnm)
+# dev.off()
+step.pcnm$call
+# Check the portion of explained variation of the fish composition using the spatial model
+step.pcnm$anova
+
+# Final spatial model
+space.mod = model.matrix(~ PCNM1, data.space)[,-1]
+
+# ============================================
+# Compare env and spatial model
+data.total.env = dbrda(data.db ~ env.mod)
+data.total.space = dbrda(data.db ~ space.mod)
+
+#  PArtial constrained ordination 
+# ?Condition --> control the second explanatory matrix
+data.env.cond.space = dbrda(data.db ~ env.mod + Condition(space.mod))
+data.space.cond.env = dbrda(data.db ~ space.mod + Condition(env.mod))
+
+# Test for significance of the dbRDA fractions
+permutest(data.env.cond.space,permutations=999)
+permutest(data.space.cond.env,permutations=999)
+permutest(data.total.env,permutations=999)
+permutest(data.total.space,permutations=999)
+
+# Calculate the fraction of variation explained by space alone, by env alone and by both, and by neither
+data.varpart = varpart(data.db, env.mod, space.mod)
+data.varpart
+png("plots/zoobenthos_varpart.png", width = 4000, height = 3000, res = 500)
+par(mar = c(2,2,2,2))
+plot(data.varpart)
+text(1, 0.25, "Space")
+text(0, 0.25, "Env")
+mtext("Variation Partitioning of\nZoobenthos Diversity", side = 3, line =-3)
+dev.off()
+
+```
+
+## Spatial and environmental drivers of zoobenthos community composition
+
+> **Comments about the variation partitioning including spatial data**:
+>
+> For the spatial model PCNM
+> We identified that there is only a single eigenvector, PCNM1, best captured the spatial structure. This spatial predictor (PCNM1) explains about 1% of the variation in zoobenthos community composition (adjusted R^2= 0.202).
+>
+> For the model using spatial variables controlling for environment variables,
+> We see that the model is significant (adjusted R-squared 20%). 
+> This means that that the environmental variables (pH, bottom depth, nitrate and minimal depth) significantly explain community variation even after accounting for spatial structure.
+>
+> In contrast, for the model using environemental variables controlling for spatial factors,
+> we see that the model has less explainatory power (R^2 adjusted = 20%). 
+> This suggests that the spatial variation is not a significant driver of the zoobenthos biodiversities between sites.
+>
+> If we take each model  excluding the other set of explainatory variables:
+> For the model using only environemental variables, interestingly, the adjusted R squared value decreased by half (21%)
+> For the model using only spatial variable, expectedly, the adjusted R squared value is very low (1%).
+> We also see that when using both environment and space together, the model explains 40.7% of the variation (R&2 adjusted).
+> This shows that we need to take in account additional factors that influence the variation of biodiversities between sites of the zoobenthos.
+
+
+# TEMPORAL Analysis
+```{r}
+
+# Load packages
+package.list = c("vegan", "tidyr", "dplyr", "ggplot2", "codyn", "cowplot", "MullerPlot",
+  "RColorBrewer", "reshape2", "lubridate", "TTR", "xtable", "multcomp", "pander", "png", "grid",
+  "tseries", "nlme", "forecast", "emmeans")
+for (package in package.list) {
+  if (!require(package, character.only = TRUE, quietly = TRUE)) {
+    install.packages(package, dependencies = TRUE)
+    library(package, character.only = TRUE)
+  }
+}
+
+```
+
+Next, we will try to make a time by species matrix
+
+```{r}
+
+# Load temporal data
+library(dplyr)
+library(tidyr)
+
+## ==================================================
+# S0
+## ==================================================
+S0 = read.csv("data/S0_tbs.csv", row.names = 1)
+S0.ts = ts(S0, start = 1984, end = 2004, frequency = 1)
+
+# Calculate variance of each species over time
+var_S0 = apply(S0, 2, var)
+var_S0 = as.data.frame(var_S0)
+
+# Sort the species by variance
+library(tidyverse)
+most_varspS0 = var_S0 %>%
+  arrange(desc(var_S0)) %>%  # arrange in descending order
+  slice(1:6)   %>% # return rows 1 through 10               
+  rownames() # Extract the species names
+
+least_varspS0 = var_S0 %>%
+  arrange(var_S0) %>%  # arrange in descending order
+  slice(1:6)   %>% # return rows 1 through 10               
+  rownames() # Extract the species names
+
+
+# Plot the abundance of the most variable species
+png("plots/most_var_S0.png", width = 1000, height = 1000)
+plot(S0.ts[, most_varspS0], main = "Most variable species in site 0", xlab = "Year", ylab = "Abundance")
+dev.off()
+
+# Plot the abundance of the least variable species
+png("plots/least_var_S0.png", width = 1000, height = 1000)
+plot(S0.ts[, least_varspS0], main = "Least variable species in site 0", xlab = "Year", ylab = "Abundance")
+dev.off()
+
+## ==================================================
+# S2
+## ==================================================
+S2 = read.csv("data/S2_tbs.csv", row.names = 1)
+S2.ts = ts(S2, start = 1984, end = 2004, frequency = 1)
+
+# Calculate variance of each species over time
+var_S2 = apply(S2, 2, var)
+var_S2 = as.data.frame(var_S2)
+
+# Sort the species by variance
+most_varspS2 = var_S2 %>%
+  arrange(desc(var_S2)) %>%  # arrange in descending order
+  slice(1:6)   %>% # return rows 1 through 10               
+  rownames() # Extract the species names
+
+least_varspS2 = var_S2 %>%
+  arrange(var_S2) %>%  # arrange in descending order
+  slice(1:6)   %>% # return rows 1 through 10               
+  rownames() # Extract the species names
+
+
+# Plot the abundance of the most variable species
+png("plots/most_var_S2.png", width = 1000, height = 1000)
+plot(S2.ts[, most_varspS2], main = "Most variable species in site 0", xlab = "Year", ylab = "Abundance")
+dev.off()
+
+# Plot the abundance of the least variable species
+png("plots/least_var_S2.png", width = 1000, height = 1000)
+plot(S2.ts[, least_varspS2], main = "Least variable species in site 0", xlab = "Year", ylab = "Abundance")
+dev.off()
+
+
+## ==================================================
+# S3
+## ==================================================
+S3 = read.csv("data/S3_tbs.csv", row.names = 1)
+S3.ts = ts(S3, start = 1984, end = 2004, frequency = 1)
+
+# Calculate variance of each species over time
+var_S3 = apply(S3, 2, var)
+var_S3 = as.data.frame(var_S3)
+
+# Sort the species by variance
+most_varspS3 = var_S3 %>%
+  arrange(desc(var_S3)) %>%  # arrange in descending order
+  slice(1:6)   %>% # return rows 1 through 10               
+  rownames() # Extract the species names
+
+least_varspS3 = var_S3 %>%
+  arrange(var_S3) %>%  # arrange in descending order
+  slice(1:6)   %>% # return rows 1 through 10               
+  rownames() # Extract the species names
+
+# Plot the abundance of the most variable species
+png("plots/most_var_S3.png", width = 1000, height = 1000)
+plot(S3.ts[, most_varspS3], main = "Most variable species in site 0", xlab = "Year", ylab = "Abundance")
+dev.off()
+
+# Plot the abundance of the least variable species
+png("plots/least_var_S3.png", width = 1000, height = 1000)
+plot(S3.ts[, least_varspS3], main = "Least variable species in site 0", xlab = "Year", ylab = "Abundance")
+dev.off()
+
+
+## ==================================================
+# Decompose the time series
+## ==================================================
+# S0
+# S0.decomp <- stl(S0.ts[, most_varsp[1]], s.window = "periodic")
+library(tseries)
+adf.raw = adf.test(S0.ts[, most_varspS0[1]])
+adf.raw
+
+S0.ts.diff = diff(S0.ts[, most_varspS0[1]])
+adf.diff = adf.test(S0.ts.diff)
+adf.diff
+
+plot.ts(S0.ts.diff, main = "Differenced time series", 
+        xlab = "Year", ylab = "Abundance")
+
+acf(S0.ts.diff, main = "ACF of differenced time series")
+pacf(S0.ts.diff, main = "PACF of differenced time series")
+
+```
+
+The test suggests that the time series in S0.ts[, most_varsp[1]] is non-stationary because the p-value (0.6225) is greater than common thresholds for significance (typically 0.05). This means the series likely contains a unit root, and you may need to difference or transform the data to achieve stationarity before using it in further analysis or modeling.
+
