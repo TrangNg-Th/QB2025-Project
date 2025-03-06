@@ -1,0 +1,94 @@
+---
+title: 'Temporal Analysis of Zoobenthos Data'
+author: "Trang Nguyen; El Park"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: pdf_document
+geometry: margin=2.54cm
+---
+
+
+
+
+prep workspace
+```{r}
+rm(list=ls()) 
+getwd()
+package.list = c('vegan', 'tidyr', 'dplyr', 'codyn', 'ggplot2', 'nlme', 'forecast', 'emmeans', 'tseries', 'RColorBrewer')
+for (package in package.list) {
+  if (!require(package, character.only = TRUE, quietly = TRUE)) {
+    install.packages(package, repos='http://cran.us.r-project.org')
+    library(package, character.only = TRUE)
+  }
+}
+
+```
+
+Load data
+
+```{r}
+setwd('/cloud/project/QB2025-Project/Ab.Env.Time')  #for ggsave
+#abundance
+zoob<-read.csv('/cloud/project/QB2025-Project/data/data_abundance.csv')
+
+abundance <- zoob %>%
+  group_by(site_id, year) %>%
+  summarise(abundance = sum(abundance)) %>%
+  ungroup()
+
+#plot abundance over time
+plot.new()
+ab<-ggplot(abundance, aes(x = year, y = abundance, colour = site_id))+
+  geom_line() + 
+  theme_minimal()+
+  labs(title = "Abundance over time by site", x = "Time", y = "Species Richness", colour = "Site") +
+  theme(legend.key.size = unit(0.5, 'cm'), legend.position = "right")
+ggsave("Abundance_over_time.png", plot = ab, width = 8, height = 2, dpi = 300)
+
+#Loop through to make plots for each individual site
+site_ids <- unique(abundance$site_id)
+for (site in site_ids) {
+  site_data <- abundance %>% filter(site_id == site)
+  
+  plot<-ggplot(site_data, aes(x = year, y = abundance, colour = site_id)) +
+    geom_line() + 
+    theme_minimal() +
+    labs(title = paste("Abundance over time for site", site), x = "Time", y = "Species Richness", colour = "Site") +
+    theme(legend.key.size = unit(0.5, 'cm'), legend.position = "right")
+  
+  # Save the plot
+  ggsave(paste0("Abundance_over_time_", site, ".png"), plot = plot, width = 8, height = 2, dpi = 300)
+}
+
+```
+
+
+Now the env data
+The dbRDA revealed three of the most influencing environmental factors: salinity, silicate, bottom depth, and temperature. Within our working data (1994-2004), pH, phosphate, and nitrate are also factors influencing diversity at each site. Since bottom depth is not necessarily an indicator of environmental conditions, we will be removing it from our analysis. We will be adding pH, as acidification of marine habitats is a sign of climate change. I'm also throwing in  chlorophyll because I'm curious and who needs sleep
+
+```{r}
+env<-read.csv('/cloud/project/QB2025-Project/data/env_data.csv')
+#isolate data for salinity, silicate, temperature, and pH
+#site_year is column 1, temp and salinity are 7 and 8, silicate is 12, pH is 19, and chlorophyll a is 21
+env<-env[, c(1, 7, 8, 12, 19, 21)]
+env <- env %>%
+  separate(site_year, into = c("site", "year"), sep = "_")
+  select('site', 'year', 'temperature', 'salinity', 'silicate', 'ph', 'chlorophyll_a')
+
+#Loop through to make plots for each individual site
+site_ids <- unique(env$site)
+for (site in site_ids) {
+  site_data <- env %>% filter(site == site)
+  
+  # Loop through each column (excluding 'year' and 'site')
+  for (col in names(site_data)[!names(site_data) %in% c("year", "site")]) {
+    plot <- ggplot(site_data, aes_string(x = "year", y = col, colour = "site")) +
+      geom_line() + 
+      theme_minimal() +
+      labs(title = paste(col,"over time for site", site), x = "Time", y = col, colour = "Site") +
+      theme(legend.key.size = unit(0.5, 'cm'), legend.position = "right")
+    print(plot)
+    # Save the plot
+    ggsave(paste0("Abundance_over_time_", site, "_", col, ".png"), plot = plot, width = 8, height = 2, dpi = 300)
+  }
+}
+```
