@@ -96,3 +96,58 @@ for (site in site_ids) {
 
 
 ```
+
+## Correlation Analysis
+We will be conducting a correlation analysis to determine the relationship between the environmental factors and species richness. We will also be conducting a linear mixed effects model to determine the relationship between the environmental factors and species richness.
+```{r}
+# Test for correlation
+library(tidyverse)
+library(lme4)
+library(MuMIn)
+library(lmtest)
+library(ggplot2)
+colnames(env)
+install.packages("ggcorrplot")
+# install.packages("GGally")
+library(GGally)
+# Correlation Matrix
+cor_matrix <- cor(env[, c("bot_depth", "temperature", "salinity",  "oxygen" , "phosphate", "silicate", "ph",                "total_phosphorus", "richness")], use = "complete.obs", method = "spearman")
+# Plot Correlation Matrix
+ggcorrplot(cor_matrix, lab = TRUE, method = "circle", type = "lower", tl.col = "black", tl.cex = 0.8)
+
+# Linear Mixed Effects Model
+lme_model <- lmer(richness ~ bot_depth + salinity + temperature + ph + silicate + oxygen + (1 | site_id), data = env, REML = FALSE)
+summary(lme_model)
+# Remove random effect
+ols_model <- lm(richness ~  bot_depth + salinity + temperature + ph + silicate + oxygen, data = env)
+summary(ols_model)
+
+# . Test for Multicollinearity
+# Since some variables are correlated (salinity & temperature have 0.43 correlation), check Variance Inflation Factor (VIF):
+library(car)
+vif(ols_model)
+
+# Time Series Analysis
+# To check causation, try:
+# Granger Causality Test (Does salinity, temp, etc., predict future richness?)
+library(lmtest)
+grangertest(richness ~ salinity, order = 2, data = env)
+
+
+options(na.action = "na.fail")  # Required for dredge()
+model_selection <- dredge(lme_model)
+options(na.action = "na.omit")  # Restore default setting
+print(model_selection)
+
+# # Granger Causality Test (if needed)
+# grangertest(richness ~ salinity, order = 2, data = env)
+
+best_model <- get.models(model_selection, subset = delta < 2)[[1]]
+summary(best_model)
+
+# Plot correlations
+ggpairs(env, columns = colnames(env), title = "Correlation Plot")
+# Save results
+ggsave("plots/correlation_plot.png", width = 8, height = 6, dpi = 300)
+
+```
