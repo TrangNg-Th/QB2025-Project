@@ -98,7 +98,7 @@ for (site in site_ids) {
 ```
 
 ## Correlation Analysis
-We will be conducting a correlation analysis to determine the relationship between the environmental factors and species richness. We will also be conducting a linear mixed effects model to determine the relationship between the environmental factors and species richness.
+We will use a linear mixed effects model to determine the relationship between the environmental factors and species richness.
 ```{r}
 # Test for correlation
 library(tidyverse)
@@ -107,7 +107,7 @@ library(MuMIn)
 library(lmtest)
 library(ggplot2)
 colnames(env)
-install.packages("ggcorrplot")
+# install.packages("ggcorrplot")
 # install.packages("GGally")
 library(GGally)
 # Correlation Matrix
@@ -121,7 +121,8 @@ summary(lme_model)
 # Remove random effect
 ols_model <- lm(richness ~  bot_depth + salinity + temperature + ph + silicate + oxygen, data = env)
 summary(ols_model)
-
+aic_ols <- AIC(ols_model)
+print(aic_ols)
 # . Test for Multicollinearity
 # Since some variables are correlated (salinity & temperature have 0.43 correlation), check Variance Inflation Factor (VIF):
 library(car)
@@ -131,13 +132,16 @@ vif(ols_model)
 # To check causation, try:
 # Granger Causality Test (Does salinity, temp, etc., predict future richness?)
 library(lmtest)
-grangertest(richness ~ salinity, order = 2, data = env)
+# grangertest(richness ~ salinity, order = 5, data = env)
+# grangertest(richness ~ temperature, order = 5, data = env)
+# grangertest(richness ~ ph, order = 5, data = env)
+# grangertest(richness ~ silicate, order = 5, data = env)
 
 
-options(na.action = "na.fail")  # Required for dredge()
-model_selection <- dredge(lme_model)
-options(na.action = "na.omit")  # Restore default setting
-print(model_selection)
+# options(na.action = "na.fail")  # Required for dredge()
+# model_selection <- dredge(lme_model)
+# options(na.action = "na.omit")  # Restore default setting
+# print(model_selection)
 
 # # Granger Causality Test (if needed)
 # grangertest(richness ~ salinity, order = 2, data = env)
@@ -149,5 +153,18 @@ summary(best_model)
 ggpairs(env, columns = colnames(env), title = "Correlation Plot")
 # Save results
 ggsave("plots/correlation_plot.png", width = 8, height = 6, dpi = 300)
+
+
+## Time series analysis
+library(forecast)
+auto.arima(env$richness)
+
+## Another way to check for causation
+library(nlme)
+lme_model_ar1 <- lme(richness ~ bot_depth + salinity + temperature + ph + silicate + oxygen, 
+                      random = ~ 1 | site_id, 
+                      correlation = corAR1(), 
+                      data = env)
+summary(lme_model_ar1)
 
 ```
