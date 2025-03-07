@@ -89,7 +89,7 @@ richness_data$year = as.factor(richness_data$year)
 richness_data$site_id = as.factor(richness_data$site_id)
 richness_data$richness = as.numeric(richness_data$richness)
 
-head(richness_data)
+# head(richness_data)
 ```
 
 ## 3. **Visualizing Temporal Patterns**
@@ -183,7 +183,7 @@ plot(rich.rm_simple, which = 3, main = "Scale-Location Plot")
 
 We then perform the **ANOVA** to assess the statistical significance of the fixed effects and calculate **LSMeans** to estimate marginal means.
 
-```r
+```{r}
 # Perform the ANOVA
 anova_results = anova(rich.rm_simple)
 pander(anova_results)
